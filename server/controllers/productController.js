@@ -80,17 +80,24 @@ export const getProductById = async (req, res, next) => {
 // @access  Private
 export const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, images, category, condition, location } = req.body;
+    const { title, description, price, category, condition, location } = req.body;
+    const files = req.files || [];
 
     if (!title || !description || !price || !category || !condition) {
       return res.status(400).json({ message: "Please fill in all required fields" });
     }
 
+    if (files.length > 5) {
+      return res.status(400).json({ message: "You can upload a maximum of 5 images" });
+    }
+
+    const images = files.map((file) => `/uploads/${file.filename}`);
+
     const product = await Product.create({
       title,
       description,
       price,
-      images: images || [],
+      images,
       category,
       condition,
       location,
@@ -118,7 +125,7 @@ export const updateProduct = async (req, res, next) => {
       return res.status(403).json({ message: "Not authorized to edit this listing" });
     }
 
-    const fields = ["title", "description", "price", "images", "category", "condition", "location"];
+    const fields = ["title", "description", "price", "category", "condition", "location"];
     fields.forEach((field) => {
       if (req.body[field] !== undefined) product[field] = req.body[field];
     });

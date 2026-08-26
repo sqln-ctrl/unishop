@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProduct } from "../services/productService.js";
 import { CATEGORIES, CONDITIONS } from "../utils/categories.js";
 
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 const CreateProduct = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -12,23 +16,76 @@ const CreateProduct = () => {
     category: CATEGORIES[0],
     condition: CONDITIONS[0],
     location: "",
-    images: "",
   });
+  const [images, setImages] = useState([]);
+  const imagesRef = useRef([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  imagesRef.current = images;
+
+  useEffect(() => {
+    return () => {
+      imagesRef.current.forEach((item) => URL.revokeObjectURL(item.preview));
+    };
+  }, []);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const addFiles = (fileList) => {
+    const incoming = Array.from(fileList || []);
+    if (!incoming.length) return;
+
+    setError("");
+    const remaining = MAX_IMAGES - images.length;
+    if (remaining <= 0) {
+      setError(`You can upload a maximum of ${MAX_IMAGES} images`);
+      return;
+    }
+
+    const next = [];
+    for (const file of incoming.slice(0, remaining)) {
+      if (!file.type.startsWith("image/")) {
+        setError("Only image files are allowed");
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setError("Each image must be 5MB or smaller");
+        continue;
+      }
+      next.push({ file, preview: URL.createObjectURL(file) });
+    }
+
+    if (incoming.length > remaining) {
+      setError(`You can upload a maximum of ${MAX_IMAGES} images`);
+    }
+
+    if (next.length) setImages((prev) => [...prev, ...next]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index) => {
+    setImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      const payload = {
-        ...form,
-        price: Number(form.price),
-        images: form.images ? form.images.split(",").map((s) => s.trim()) : [],
-      };
+      const payload = new FormData();
+      payload.append("title", form.title);
+      payload.append("description", form.description);
+      payload.append("price", form.price);
+      payload.append("category", form.category);
+      payload.append("condition", form.condition);
+      payload.append("location", form.location);
+      images.forEach((item) => payload.append("images", item.file));
+
       const product = await createProduct(payload);
       navigate(`/products/${product._id}`);
     } catch (err) {
@@ -126,17 +183,42 @@ const CreateProduct = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Image URLs (comma-separated)</label>
-          <input
-            name="images"
-            value={form.images}
-            onChange={handleChange}
-            placeholder="https://..., https://..."
-            className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-campus-gold"
-          />
-          <p className="text-xs text-campus-navy/40 mt-1">
-            File uploads (Cloudinary) come in Phase 2 — paste hosted image links for now.
+          <label className="text-sm font-medium">Product photos</label>
+          <p className="text-xs text-campus-navy/40 mt-0.5 mb-2">
+            Upload up to {MAX_IMAGES} images from your computer or phone (5MB each).
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => addFiles(e.target.files)}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            {images.map((item, index) => (
+              <div key={item.preview} className="relative aspect-square rounded-lg overflow-hidden bg-campus-navy/5">
+                <img src={item.preview} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 text-xs leading-none"
+                  aria-label="Remove photo"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {images.length < MAX_IMAGES && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square rounded-lg border border-dashed border-campus-navy/25 text-campus-navy/60 text-sm hover:border-campus-gold hover:text-campus-navy"
+              >
+                + Add photo
+              </button>
+            )}
+          </div>
         </div>
         <button
           type="submit"

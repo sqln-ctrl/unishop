@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, deleteProduct, markAsSold } from "../services/productService.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { imageUrl } from "../utils/imageUrl.js";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -9,6 +10,7 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
@@ -42,12 +44,34 @@ const ProductDetails = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
-      <div className="aspect-square rounded-2xl bg-campus-navy/5 overflow-hidden">
-        {product.images?.[0] ? (
-          <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-campus-navy/30">
-            No image
+      <div>
+        <div className="aspect-square rounded-2xl bg-campus-navy/5 overflow-hidden">
+          {product.images?.[activeImage] ? (
+            <img
+              src={imageUrl(product.images[activeImage])}
+              alt={product.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-campus-navy/30">
+              No image
+            </div>
+          )}
+        </div>
+        {product.images?.length > 1 && (
+          <div className="mt-3 grid grid-cols-5 gap-2">
+            {product.images.slice(0, 5).map((src, index) => (
+              <button
+                key={src}
+                type="button"
+                onClick={() => setActiveImage(index)}
+                className={`aspect-square rounded-lg overflow-hidden border ${
+                  activeImage === index ? "border-campus-gold" : "border-transparent"
+                }`}
+              >
+                <img src={imageUrl(src)} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
           </div>
         )}
       </div>

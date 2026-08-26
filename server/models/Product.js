@@ -21,6 +21,10 @@ const productSchema = new mongoose.Schema(
     images: {
       type: [String],
       default: [],
+      validate: {
+        validator: (arr) => arr.length <= 5,
+        message: "You can upload a maximum of 5 images",
+      },
     },
     category: {
       type: String,

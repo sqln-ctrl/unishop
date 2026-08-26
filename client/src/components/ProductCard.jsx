@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { imageUrl } from "../utils/imageUrl.js";
 
 const ProductCard = ({ product }) => {
   return (
@@ -10,7 +11,7 @@ const ProductCard = ({ product }) => {
       <div className="aspect-square bg-campus-navy/5 overflow-hidden">
         {product.images?.[0] ? (
           <img
-            src={product.images[0]}
+            src={imageUrl(product.images[0])}
             alt={product.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

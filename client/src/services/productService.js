@@ -10,8 +10,8 @@ export const getProductById = async (id) => {
   return res.data;
 };
 
-export const createProduct = async (data) => {
-  const res = await api.post("/products", data);
+export const createProduct = async (formData) => {
+  const res = await api.post("/products", formData);
   return res.data;
 };
 

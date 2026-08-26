@@ -8,6 +8,22 @@ export const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message;
 
+  if (err.name === "MulterError") {
+    statusCode = 400;
+    if (err.code === "LIMIT_FILE_COUNT") {
+      message = "You can upload a maximum of 5 images";
+    } else if (err.code === "LIMIT_FILE_SIZE") {
+      message = "Each image must be 5MB or smaller";
+    } else {
+      message = err.message;
+    }
+  }
+
+  if (err.message === "Only image files are allowed") {
+    statusCode = 400;
+    message = err.message;
+  }
+
   if (err.name === "CastError" && err.kind === "ObjectId") {
     statusCode = 404;
     message = "Resource not found";
