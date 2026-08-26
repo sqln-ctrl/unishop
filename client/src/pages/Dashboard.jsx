@@ -23,6 +23,7 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
+
     if (user && isSeller) fetch();
     else setLoading(false);
   }, [user, isSeller]);
@@ -30,10 +31,10 @@ const Dashboard = () => {
   const active = listings.filter((l) => l.status === "available");
   const sold = listings.filter((l) => l.status === "sold");
 
-  const handleSwitch = async (accountType) => {
+  const handleSwitch = async () => {
     setSwitching(true);
     try {
-      await switchAccountType(accountType);
+      await switchAccountType("seller");
     } catch (err) {
       console.error(err);
     } finally {
@@ -45,27 +46,25 @@ const Dashboard = () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Hi, {user?.name?.split(" ")[0]}</h1>
+          <h1 className="text-3xl font-bold">
+            Hi, {user?.name?.split(" ")[0]}
+          </h1>
+
           <p className="text-campus-navy/60 mt-1">
             {user?.university} ·{" "}
-            <span className="capitalize">{user?.accountType} account</span>
+            <span className="capitalize">
+              {user?.accountType} account
+            </span>
           </p>
         </div>
-        {isSeller ? (
+
+        {isSeller && (
           <Link
             to="/create"
             className="rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium"
           >
             + New listing
           </Link>
-        ) : (
-          <button
-            onClick={() => handleSwitch("seller")}
-            disabled={switching}
-            className="rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium disabled:opacity-50"
-          >
-            {switching ? "Switching..." : "Become a seller"}
-          </button>
         )}
       </div>
 
@@ -74,20 +73,37 @@ const Dashboard = () => {
           <h2 className="font-display text-lg font-semibold">
             You're on a regular account
           </h2>
+
           <p className="text-campus-navy/60 text-sm mt-1 max-w-sm mx-auto">
-            Regular accounts can browse and message sellers. Switch to a seller account
+            Regular accounts can browse and message sellers. Become a seller
             to start listing your own items.
           </p>
+
+          <button
+            onClick={handleSwitch}
+            disabled={switching}
+            className="mt-5 rounded-full bg-campus-navy text-campus-cream px-6 py-2.5 text-sm font-medium disabled:opacity-50"
+          >
+            {switching ? "Switching..." : "Become a seller"}
+          </button>
         </div>
       ) : (
         <>
-          <h2 className="text-lg font-semibold mb-3">Active listings ({active.length})</h2>
+          <h2 className="text-lg font-semibold mb-3">
+            Active listings ({active.length})
+          </h2>
+
           {loading ? (
-            <p className="text-campus-navy/50 text-sm mb-8">Loading...</p>
+            <p className="text-campus-navy/50 text-sm mb-8">
+              Loading...
+            </p>
           ) : active.length === 0 ? (
             <p className="text-campus-navy/50 text-sm mb-8">
               You haven't listed anything yet.{" "}
-              <Link to="/create" className="text-campus-gold font-medium">
+              <Link
+                to="/create"
+                className="text-campus-gold font-medium"
+              >
                 Create your first listing
               </Link>
               .
@@ -102,7 +118,10 @@ const Dashboard = () => {
 
           {sold.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold mb-3">Sold ({sold.length})</h2>
+              <h2 className="text-lg font-semibold mb-3">
+                Sold ({sold.length})
+              </h2>
+
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
                 {sold.map((p) => (
                   <ProductCard key={p._id} product={p} />
@@ -110,14 +129,6 @@ const Dashboard = () => {
               </div>
             </>
           )}
-
-          <button
-            onClick={() => handleSwitch("regular")}
-            disabled={switching}
-            className="text-sm text-campus-navy/50 hover:text-campus-navy underline disabled:opacity-50"
-          >
-            Switch back to a regular account
-          </button>
         </>
       )}
     </div>

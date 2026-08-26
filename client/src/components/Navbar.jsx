@@ -1,14 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, switchAccountType } = useAuth();
   const navigate = useNavigate();
+  const [switching, setSwitching] = useState(false);
+
+  const isSeller = user?.accountType === "seller";
 
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const handleBecomeSeller = async () => {
+    setSwitching(true);
+    try {
+      await switchAccountType("seller");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSwitching(false);
+    }
   };
 
   return (
@@ -24,14 +39,27 @@ const Navbar = () => {
           </Link>
           {user ? (
             <>
-              {user.accountType === "seller" && (
+              {isSeller && (
                 <Link to="/create" className="hover:text-campus-gold transition-colors">
                   Sell an item
                 </Link>
               )}
-              <Link to="/dashboard" className="hover:text-campus-gold transition-colors">
-                Dashboard
+              <Link to="/wishlist" className="hover:text-campus-gold transition-colors">
+                Wishlist
               </Link>
+              {isSeller ? (
+                <Link to="/dashboard" className="hover:text-campus-gold transition-colors">
+                  Dashboard
+                </Link>
+              ) : (
+                <button
+                  onClick={handleBecomeSeller}
+                  disabled={switching}
+                  className="hover:text-campus-gold transition-colors disabled:opacity-50"
+                >
+                  {switching ? "Switching..." : "Become a seller"}
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="rounded-full bg-campus-navy text-campus-cream px-4 py-1.5 hover:bg-campus-navy/90 transition-colors"
