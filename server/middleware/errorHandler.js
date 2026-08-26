@@ -24,6 +24,20 @@ export const errorHandler = (err, req, res, next) => {
     message = err.message;
   }
 
+  if (
+    err.name === "MongooseError" &&
+    typeof err.message === "string" &&
+    err.message.includes("buffering timed out")
+  ) {
+    statusCode = 503;
+    message = "Database is still connecting. Please try again.";
+  }
+
+  if (err.name === "MongoServerSelectionError") {
+    statusCode = 503;
+    message = "Database unavailable. Please try again.";
+  }
+
   if (err.name === "CastError" && err.kind === "ObjectId") {
     statusCode = 404;
     message = "Resource not found";

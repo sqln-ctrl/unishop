@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, deleteProduct, markAsSold } from "../services/productService.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { imageUrl } from "../utils/imageUrl.js";
+import { whatsappChatUrl } from "../utils/whatsapp.js";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -119,13 +120,16 @@ const ProductDetails = () => {
               Delete listing
             </button>
           </div>
-        ) : (
-          user && (
-            <button className="mt-6 rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium">
-              Message seller
-            </button>
-          )
-        )}
+        ) : product.status !== "sold" && product.whatsappNumber ? (
+          <a
+            href={whatsappChatUrl(product.whatsappNumber, product.title)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium hover:bg-campus-navy/90"
+          >
+            Message seller
+          </a>
+        ) : null}
       </div>
     </div>
   );

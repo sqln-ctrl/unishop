@@ -16,6 +16,7 @@ const CreateProduct = () => {
     category: CATEGORIES[0],
     condition: CONDITIONS[0],
     location: "",
+    whatsappNumber: "",
   });
   const [images, setImages] = useState([]);
   const imagesRef = useRef([]);
@@ -84,6 +85,7 @@ const CreateProduct = () => {
       payload.append("category", form.category);
       payload.append("condition", form.condition);
       payload.append("location", form.location);
+      payload.append("whatsappNumber", form.whatsappNumber);
       images.forEach((item) => payload.append("images", item.file));
 
       const product = await createProduct(payload);
@@ -181,6 +183,21 @@ const CreateProduct = () => {
             placeholder="e.g. Hostel Block C"
             className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-campus-gold"
           />
+        </div>
+        <div>
+          <label className="text-sm font-medium">WhatsApp number</label>
+          <input
+            type="tel"
+            name="whatsappNumber"
+            required
+            value={form.whatsappNumber}
+            onChange={handleChange}
+            placeholder="e.g. 03001234567 or +92 300 1234567"
+            className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-campus-gold"
+          />
+          <p className="text-xs text-campus-navy/40 mt-1">
+            Buyers will contact you on this number through WhatsApp.
+          </p>
         </div>
         <div>
           <label className="text-sm font-medium">Product photos</label>

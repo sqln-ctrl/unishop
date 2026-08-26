@@ -56,6 +56,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    whatsappNumber: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     status: {
       type: String,
       enum: ["available", "sold"],

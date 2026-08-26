@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import { isValidWhatsAppNumber, normalizeWhatsAppNumber } from "../utils/whatsapp.js";
 
 // @desc    Get all products (with search, filter, sort)
 // @route   GET /api/products
@@ -67,7 +68,7 @@ export const getProductById = async (req, res, next) => {
     }
 
     product.views += 1;
-    await product.save();
+    await product.save({ validateModifiedOnly: true });
 
     res.json(product);
   } catch (error) {
@@ -80,11 +81,16 @@ export const getProductById = async (req, res, next) => {
 // @access  Private
 export const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, category, condition, location } = req.body;
+    const { title, description, price, category, condition, location, whatsappNumber } = req.body;
     const files = req.files || [];
 
-    if (!title || !description || !price || !category || !condition) {
+    if (!title || !description || !price || !category || !condition || !whatsappNumber) {
       return res.status(400).json({ message: "Please fill in all required fields" });
+    }
+
+    const normalizedWhatsApp = normalizeWhatsAppNumber(whatsappNumber);
+    if (!isValidWhatsAppNumber(normalizedWhatsApp)) {
+      return res.status(400).json({ message: "Please enter a valid WhatsApp number" });
     }
 
     if (files.length > 5) {
@@ -101,6 +107,7 @@ export const createProduct = async (req, res, next) => {
       category,
       condition,
       location,
+      whatsappNumber: normalizedWhatsApp,
       seller: req.user._id,
     });
 
@@ -129,6 +136,14 @@ export const updateProduct = async (req, res, next) => {
     fields.forEach((field) => {
       if (req.body[field] !== undefined) product[field] = req.body[field];
     });
+
+    if (req.body.whatsappNumber !== undefined) {
+      const normalizedWhatsApp = normalizeWhatsAppNumber(req.body.whatsappNumber);
+      if (!isValidWhatsAppNumber(normalizedWhatsApp)) {
+        return res.status(400).json({ message: "Please enter a valid WhatsApp number" });
+      }
+      product.whatsappNumber = normalizedWhatsApp;
+    }
 
     const updated = await product.save();
     res.json(updated);
