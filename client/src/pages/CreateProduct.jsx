@@ -15,6 +15,7 @@ const CreateProduct = () => {
     category: CATEGORIES[0],
     condition: CONDITIONS[0],
     location: "",
+    whatsapp: "",
   });
   const [images, setImages] = useState([]); // hosted URLs returned by Cloudinary
   const [uploading, setUploading] = useState(false);
@@ -51,6 +52,15 @@ const CreateProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Basic sanity check: needs at least a country code + number, digits only
+    // once we strip spaces/dashes/parentheses/plus sign.
+    const digitsOnly = form.whatsapp.replace(/[^\d]/g, "");
+    if (digitsOnly.length < 8) {
+      setError("Enter a valid WhatsApp number, including country code (e.g. +923001234567)");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload = { ...form, price: Number(form.price), images };
@@ -185,6 +195,22 @@ const CreateProduct = () => {
             placeholder="e.g. Hostel Block C"
             className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-campus-gold"
           />
+        </div>
+        <div>
+          <label className="text-sm font-medium">WhatsApp number</label>
+          <input
+            type="tel"
+            name="whatsapp"
+            required
+            value={form.whatsapp}
+            onChange={handleChange}
+            placeholder="+923001234567"
+            className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-campus-gold"
+          />
+          <p className="text-xs text-campus-navy/40 mt-1">
+            Include your country code. Buyers will use this to message you directly on
+            WhatsApp — it isn't shown as text anywhere on the listing.
+          </p>
         </div>
         <button
           type="submit"
