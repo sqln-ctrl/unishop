@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, deleteProduct, markAsSold } from "../services/productService.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { imageUrl } from "../utils/imageUrl.js";
-import { whatsappChatUrl } from "../utils/whatsapp.js";
+import WishlistButton from "../components/WishlistButton.jsx";
+import ReportModal from "../components/ReportModal.jsx";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -11,7 +11,7 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(0);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -45,40 +45,21 @@ const ProductDetails = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
-      <div>
-        <div className="aspect-square rounded-2xl bg-campus-navy/5 overflow-hidden">
-          {product.images?.[activeImage] ? (
-            <img
-              src={imageUrl(product.images[activeImage])}
-              alt={product.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-campus-navy/30">
-              No image
-            </div>
-          )}
-        </div>
-        {product.images?.length > 1 && (
-          <div className="mt-3 grid grid-cols-5 gap-2">
-            {product.images.slice(0, 5).map((src, index) => (
-              <button
-                key={src}
-                type="button"
-                onClick={() => setActiveImage(index)}
-                className={`aspect-square rounded-lg overflow-hidden border ${
-                  activeImage === index ? "border-campus-gold" : "border-transparent"
-                }`}
-              >
-                <img src={imageUrl(src)} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
+      <div className="aspect-square rounded-2xl bg-campus-navy/5 overflow-hidden">
+        {product.images?.[0] ? (
+          <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-campus-navy/30">
+            No image
           </div>
         )}
       </div>
 
       <div>
-        <p className="text-xs uppercase tracking-wide text-campus-navy/50">{product.category}</p>
+        <div className="flex items-start justify-between">
+          <p className="text-xs uppercase tracking-wide text-campus-navy/50">{product.category}</p>
+          <WishlistButton productId={product._id} className="w-9 h-9 border border-campus-navy/10" />
+        </div>
         <h1 className="text-2xl font-bold mt-1">{product.title}</h1>
         <p className="text-2xl font-semibold text-campus-gold mt-2">${product.price}</p>
 
@@ -120,17 +101,26 @@ const ProductDetails = () => {
               Delete listing
             </button>
           </div>
-        ) : product.status !== "sold" && product.whatsappNumber ? (
-          <a
-            href={whatsappChatUrl(product.whatsappNumber, product.title)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium hover:bg-campus-navy/90"
-          >
-            Message seller
-          </a>
-        ) : null}
+        ) : (
+          user && (
+            <div className="mt-6 flex items-center gap-4">
+              <button className="rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium">
+                Message seller
+              </button>
+              <button
+                onClick={() => setShowReport(true)}
+                className="text-sm text-campus-navy/50 hover:text-red-600 underline"
+              >
+                Report listing
+              </button>
+            </div>
+          )
+        )}
       </div>
+
+      {showReport && (
+        <ReportModal productId={product._id} onClose={() => setShowReport(false)} />
+      )}
     </div>
   );
 };
