@@ -1,39 +1,39 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import multer from "multer";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const uploadsDir = path.join(__dirname, "..", "uploads");
+// Images are held in memory only long enough to stream to Cloudinary.
+// Nothing is written to disk.
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+const storage = multer.memoryStorage();
 
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]);
+const fileFilter = (req, file, cb) => {
+  const allowed = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-    const safeExt = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"].includes(ext) ? ext : ".jpg";
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  },
-});
-
-const fileFilter = (_req, file, cb) => {
-  if (file.mimetype.startsWith("image/") || ALLOWED_TYPES.has(file.mimetype)) {
+  if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed"));
+    cb(
+      new Error("Only JPEG, PNG, WEBP, or GIF images are allowed"),
+      false
+    );
   }
 };
 
-export const uploadProductImages = multer({
+const upload = multer({
   storage,
   fileFilter,
   limits: {
-    files: 5,
     fileSize: 5 * 1024 * 1024,
+    files: 5,
   },
-}).array("images", 5);
+});
+
+// General upload middleware
+export default upload;
+
+// Product image upload middleware
+export const uploadProductImages = upload.array("images", 5);
