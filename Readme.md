@@ -2,7 +2,7 @@
 
 **UniShop** is a university-focused online marketplace built with the **MERN stack**, designed to help students buy, sell, exchange, and discover products and services within their university community.
 
-From used textbooks and calculators to electronics, clothing, hostel items, and student services, UniShop provides a simple and secure platform for campus-to-campus transactions.
+From used textbooks and calculators to electronics, clothing, hostel items, and student services, UniShop provides a secure platform for campus-to-campus transactions.
 
 ---
 
