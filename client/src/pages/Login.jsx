@@ -36,7 +36,7 @@ const Login = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-medium">University email</label>
+          <label className="text-sm font-medium">Email</label>
           <input
             type="email"
             name="email"

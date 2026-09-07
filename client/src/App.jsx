@@ -1,7 +1,12 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+
 import Navbar from "./components/Navbar.jsx";
-import ProtectedRoute, { SellerRoute } from "./components/ProtectedRoute.jsx";
+import ProtectedRoute, {
+  SellerRoute,
+} from "./components/ProtectedRoute.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
+
 import Marketplace from "./pages/Marketplace.jsx";
 import ProductDetails from "./pages/ProductDetails.jsx";
 import Login from "./pages/Login.jsx";
@@ -9,17 +14,35 @@ import Register from "./pages/Register.jsx";
 import CreateProduct from "./pages/CreateProduct.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Wishlist from "./pages/Wishlist.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Marketplace />} />
-          <Route path="/products/:id" element={<ProductDetails />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={<Marketplace />}
+          />
+
+          <Route
+            path="/products/:id"
+            element={<ProductDetails />}
+          />
+
+          <Route
+            path="/login"
+            element={<Login />}
+          />
+
+          <Route
+            path="/register"
+            element={<Register />}
+          />
+
           <Route
             path="/create"
             element={
@@ -28,6 +51,7 @@ function App() {
               </SellerRoute>
             }
           />
+
           <Route
             path="/dashboard"
             element={
@@ -36,12 +60,22 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/wishlist"
             element={
               <ProtectedRoute>
                 <Wishlist />
               </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             }
           />
         </Routes>
