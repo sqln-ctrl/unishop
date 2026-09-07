@@ -1,5 +1,4 @@
 import Product from "../models/Product.js";
-import { isValidWhatsAppNumber, normalizeWhatsAppNumber } from "../utils/whatsapp.js";
 
 // @desc    Get all products (with search, filter, sort)
 // @route   GET /api/products
@@ -68,7 +67,7 @@ export const getProductById = async (req, res, next) => {
     }
 
     product.views += 1;
-    await product.save({ validateModifiedOnly: true });
+    await product.save();
 
     res.json(product);
   } catch (error) {
@@ -81,33 +80,22 @@ export const getProductById = async (req, res, next) => {
 // @access  Private
 export const createProduct = async (req, res, next) => {
   try {
-    const { title, description, price, category, condition, location, whatsappNumber } = req.body;
-    const files = req.files || [];
+    const { title, description, price, images, category, condition, location, whatsapp } =
+      req.body;
 
-    if (!title || !description || !price || !category || !condition || !whatsappNumber) {
+    if (!title || !description || !price || !category || !condition || !whatsapp) {
       return res.status(400).json({ message: "Please fill in all required fields" });
     }
-
-    const normalizedWhatsApp = normalizeWhatsAppNumber(whatsappNumber);
-    if (!isValidWhatsAppNumber(normalizedWhatsApp)) {
-      return res.status(400).json({ message: "Please enter a valid WhatsApp number" });
-    }
-
-    if (files.length > 5) {
-      return res.status(400).json({ message: "You can upload a maximum of 5 images" });
-    }
-
-    const images = files.map((file) => `/uploads/${file.filename}`);
 
     const product = await Product.create({
       title,
       description,
       price,
-      images,
+      images: images || [],
       category,
       condition,
       location,
-      whatsappNumber: normalizedWhatsApp,
+      whatsapp,
       seller: req.user._id,
     });
 
@@ -132,18 +120,19 @@ export const updateProduct = async (req, res, next) => {
       return res.status(403).json({ message: "Not authorized to edit this listing" });
     }
 
-    const fields = ["title", "description", "price", "category", "condition", "location"];
+    const fields = [
+      "title",
+      "description",
+      "price",
+      "images",
+      "category",
+      "condition",
+      "location",
+      "whatsapp",
+    ];
     fields.forEach((field) => {
       if (req.body[field] !== undefined) product[field] = req.body[field];
     });
-
-    if (req.body.whatsappNumber !== undefined) {
-      const normalizedWhatsApp = normalizeWhatsAppNumber(req.body.whatsappNumber);
-      if (!isValidWhatsAppNumber(normalizedWhatsApp)) {
-        return res.status(400).json({ message: "Please enter a valid WhatsApp number" });
-      }
-      product.whatsappNumber = normalizedWhatsApp;
-    }
 
     const updated = await product.save();
     res.json(updated);

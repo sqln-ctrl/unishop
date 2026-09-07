@@ -21,10 +21,6 @@ const productSchema = new mongoose.Schema(
     images: {
       type: [String],
       default: [],
-      validate: {
-        validator: (arr) => arr.length <= 5,
-        message: "You can upload a maximum of 5 images",
-      },
     },
     category: {
       type: String,
@@ -56,10 +52,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    whatsappNumber: {
+    whatsapp: {
       type: String,
+      required: [true, "WhatsApp number is required"],
       trim: true,
-      default: "",
     },
     status: {
       type: String,
