@@ -499,13 +499,7 @@ git push origin feature/your-feature
 
 ---
 
-## 📄 License
 
-This project is currently available for educational and development purposes.
-
-A formal license can be added as the project evolves.
-
----
 
 ## 👨‍💻 Author
 
