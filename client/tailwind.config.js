@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         campus: {
-          navy: "#1B2A4A",
-          gold: "#E8A33D",
-          cream: "#FBF7EF",
+          navy: "#182841",
+          gold: "#2864E9",
+          cream: "#F8FAFC",
         },
       },
       fontFamily: {
-        display: ["'Space Grotesk'", "sans-serif"],
+        display: ["'Manrope'", "sans-serif"],
         body: ["'Inter'", "sans-serif"],
       },
     },

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/AuthLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const Login = () => {
@@ -26,7 +27,8 @@ const Login = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
+    <AuthLayout>
+      <span className="eyebrow mb-3">YOUR NEXT FIND AWAITS</span>
       <h1 className="text-2xl font-bold mb-1">Welcome back</h1>
       <p className="text-campus-navy/60 mb-6 text-sm">Log in with your university email.</p>
 
@@ -36,9 +38,10 @@ const Login = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-medium">Email</label>
+          <label htmlFor="login-email" className="text-sm font-medium">Email</label>
           <input
             type="email"
+            id="login-email"
             name="email"
             required
             value={form.email}
@@ -47,9 +50,10 @@ const Login = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Password</label>
+          <label htmlFor="login-password" className="text-sm font-medium">Password</label>
           <input
             type="password"
+            id="login-password"
             name="password"
             required
             value={form.password}
@@ -60,7 +64,7 @@ const Login = () => {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-full bg-campus-navy text-campus-cream py-2.5 font-medium hover:bg-campus-navy/90 transition-colors disabled:opacity-50"
+          className="button button-primary w-full"
         >
           {submitting ? "Logging in..." : "Log in"}
         </button>
@@ -72,7 +76,7 @@ const Login = () => {
           Create an account
         </Link>
       </p>
-    </div>
+    </AuthLayout>
   );
 };
 

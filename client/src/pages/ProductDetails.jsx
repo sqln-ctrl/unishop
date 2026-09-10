@@ -1,213 +1,60 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  getProductById,
-  deleteProduct,
-  markAsSold,
-} from "../services/productService.js";
+import { getProductById, deleteProduct, markAsSold } from "../services/productService.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import WishlistButton from "../components/WishlistButton.jsx";
 import ReportModal from "../components/ReportModal.jsx";
+import Icon from "../components/Icon.jsx";
+import { whatsappChatUrl } from "../utils/whatsapp.js";
 
-const ProductDetails = () => {
+export default function ProductDetails() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
-
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const data = await getProductById(id);
-        setProduct(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
+    let active = true;
+    setLoading(true); setProduct(null); setSelectedImage(0); setImageFailed(false); setError("");
+    getProductById(id).then((data) => { if (active) setProduct(data); }).catch(() => { if (active) setError("This listing couldn't be loaded. It may no longer be available."); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id]);
-
-  const isOwner =
-    user &&
-    product &&
-    product.seller?._id === user._id;
-
+  const isOwner = user && product?.seller?._id === user._id;
   const handleDelete = async () => {
     if (!window.confirm("Delete this listing?")) return;
-
-    try {
-      await deleteProduct(id);
-      navigate("/dashboard");
-    } catch (err) {
-      console.error(err);
-    }
+    setBusy(true);
+    try { await deleteProduct(id); navigate("/dashboard"); }
+    catch (err) { setError(err.response?.data?.message || "Couldn't delete the listing."); }
+    finally { setBusy(false); }
   };
-
-  const handleMarkSold = async () => {
-    try {
-      const updated = await markAsSold(id);
-      setProduct(updated);
-    } catch (err) {
-      console.error(err);
-    }
+  const handleSold = async () => {
+    setBusy(true);
+    try { setProduct(await markAsSold(id)); setError(""); }
+    catch (err) { setError(err.response?.data?.message || "Couldn't update the listing."); }
+    finally { setBusy(false); }
   };
-
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-campus-navy/50">
-        Loading...
+  if (loading) return <div className="page-width standard-page"><div className="empty-state" role="status">Getting your find ready…</div></div>;
+  if (!product) return <div className="page-width standard-page"><div className="empty-state"><span className="empty-icon"><Icon name="search" size={32}/></span><h1 className="text-xl font-bold">This find isn't here right now</h1><p>{error}</p><Link to="/" className="button button-primary">Back to the marketplace</Link></div></div>;
+  return <div className="page-width standard-page">
+    <div className="breadcrumb"><Link to="/">Marketplace</Link><Icon name="chevron" size={12}/><span>{product.category}</span><Icon name="chevron" size={12}/><span>{product.title}</span></div>
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    <div className="detail-grid">
+      <div><div className="detail-image">{product.images?.[selectedImage] && !imageFailed ? <img src={product.images[selectedImage]} alt={product.title} onError={() => setImageFailed(true)}/> : <div className="product-placeholder"><Icon name="image" size={65}/><span>No photo available</span></div>}</div>
+      {product.images?.length > 1 && <div className="detail-thumbnails">{product.images.map((url, index) => <button key={url + index} className={selectedImage === index ? "selected" : ""} aria-label={`View photo ${index + 1}`} aria-pressed={selectedImage === index} onClick={() => { setSelectedImage(index); setImageFailed(false); }}><img src={url} alt={`Photo ${index + 1} of ${product.title}`}/></button>)}</div>}
+      <p className="field-hint mt-5 flex items-center gap-2"><Icon name="leaf" size={16}/> A new home for a good thing.</p></div>
+      <div className="detail-copy"><div className="detail-topline"><span className="detail-category">{product.category}</span><WishlistButton productId={product._id} className="w-9 h-9 border border-slate-200"/></div>
+        <h1>{product.title}</h1><p className="detail-price">{product.price === 0 ? "Free" : `$${Number(product.price).toLocaleString()}`}</p>
+        <div className="detail-facts"><span><Icon name="check" size={14}/>{product.status === "sold" ? "Sold" : product.condition}</span>{product.location && <span><Icon name="pin" size={14}/>{product.location}</span>}<span><Icon name="eye" size={14}/>{product.views} views</span></div>
+        <h2>A little about this find</h2><p className="detail-description">{product.description}</p>
+        <div className="seller-panel"><span className="avatar">{product.seller?.name?.charAt(0) || "S"}</span><div><small>LISTED BY</small><strong>{product.seller?.name || "Campus seller"}</strong><small>{product.seller?.university}</small></div></div>
+        {isOwner ? <div className="detail-actions">{product.status !== "sold" && <button className="button button-primary" disabled={busy} onClick={handleSold}><Icon name="check" size={17}/> Mark as sold</button>}<button className="button button-danger" disabled={busy} onClick={handleDelete}>Delete listing</button></div> : user ? <><div className="detail-actions">{product.whatsapp && <a className="button button-primary" href={whatsappChatUrl(product.whatsapp, product.title)} target="_blank" rel="noopener noreferrer"><Icon name="chat" size={18}/> Message seller<Icon name="arrow" size={17}/></a>}</div><p className="field-hint text-center mt-3">Connect directly on WhatsApp to arrange the details.</p><button className="detail-report" onClick={() => setShowReport(true)}>Something doesn't look right? Report this listing</button></> : <div className="detail-actions"><Link to="/login" className="button button-primary"><Icon name="chat" size={17}/> Log in to contact the seller</Link></div>}
       </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        Listing not found.
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
-      {/* Product Image */}
-      <div className="aspect-square rounded-2xl bg-campus-navy/5 overflow-hidden">
-        {product.images?.[0] ? (
-          <img
-            src={product.images[0]}
-            alt={product.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-campus-navy/30">
-            No image
-          </div>
-        )}
-      </div>
-
-      {/* Product Information */}
-      <div>
-        <div className="flex items-start justify-between">
-          <p className="text-xs uppercase tracking-wide text-campus-navy/50">
-            {product.category}
-          </p>
-
-          <WishlistButton
-            productId={product._id}
-            className="w-9 h-9 border border-campus-navy/10"
-          />
-        </div>
-
-        <h1 className="text-2xl font-bold mt-1">
-          {product.title}
-        </h1>
-
-        <p className="text-2xl font-semibold text-campus-gold mt-2">
-          ${product.price}
-        </p>
-
-        {product.status === "sold" && (
-          <span className="inline-block mt-2 text-xs font-medium bg-campus-navy/10 text-campus-navy px-2 py-1 rounded-full">
-            Sold
-          </span>
-        )}
-
-        {/* Product Details */}
-        <div className="mt-4 text-sm text-campus-navy/70 space-y-1">
-          <p>Condition: {product.condition}</p>
-
-          {product.location && (
-            <p>Location: {product.location}</p>
-          )}
-
-          <p>{product.views} views</p>
-        </div>
-
-        {/* Description */}
-        <p className="mt-4 text-campus-navy/80 leading-relaxed">
-          {product.description}
-        </p>
-
-        {/* Seller */}
-        <div className="mt-6 pt-6 border-t border-campus-navy/10">
-          <p className="text-sm text-campus-navy/50 mb-1">
-            Seller
-          </p>
-
-          <Link
-            to="/"
-            className="font-medium hover:text-campus-gold"
-          >
-            {product.seller?.name} · {product.seller?.university}
-          </Link>
-        </div>
-
-        {/* Owner Actions */}
-        {isOwner ? (
-          <div className="mt-6 flex gap-3">
-            {product.status !== "sold" && (
-              <button
-                onClick={handleMarkSold}
-                className="rounded-full bg-campus-navy text-campus-cream px-4 py-2 text-sm font-medium"
-              >
-                Mark as sold
-              </button>
-            )}
-
-            <button
-              onClick={handleDelete}
-              className="rounded-full border border-red-300 text-red-600 px-4 py-2 text-sm font-medium"
-            >
-              Delete listing
-            </button>
-          </div>
-        ) : (
-          user && (
-            <div className="mt-6 flex items-center gap-4">
-              {/* WhatsApp */}
-              {product.whatsapp && (
-                <a
-                  href={`https://wa.me/${product.whatsapp.replace(
-                    /[^\d]/g,
-                    ""
-                  )}?text=${encodeURIComponent(
-                    `Hi! I saw your listing "${product.title}" on UniShop.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium"
-                >
-                  Message seller
-                </a>
-              )}
-
-              {/* Report */}
-              <button
-                onClick={() => setShowReport(true)}
-                className="text-sm text-campus-navy/50 hover:text-red-600 underline"
-              >
-                Report listing
-              </button>
-            </div>
-          )
-        )}
-      </div>
-
-      {/* Report Modal */}
-      {showReport && (
-        <ReportModal
-          productId={product._id}
-          onClose={() => setShowReport(false)}
-        />
-      )}
     </div>
-  );
-};
-
-export default ProductDetails;
+    {showReport && <ReportModal productId={product._id} onClose={() => setShowReport(false)}/>}
+  </div>;
+}

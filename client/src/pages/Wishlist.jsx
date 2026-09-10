@@ -1,55 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard.jsx";
+import Icon from "../components/Icon.jsx";
 import { useWishlist } from "../context/WishlistContext.jsx";
 import { getWishlist } from "../services/wishlistService.js";
 
-const Wishlist = () => {
+export default function Wishlist() {
   const { wishlistIds } = useWishlist();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState("");
   useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const data = await getWishlist();
-        setProducts(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-    // Re-fetch whenever the wishlist changes elsewhere (e.g. a heart toggle
-    // on the marketplace grid), so removals disappear from this page too.
+    let active = true;
+    setLoading(true);
+    getWishlist().then((data) => { if (active) { setProducts(data); setError(""); } }).catch(() => { if (active) setError("Couldn't load your wishlist. Please refresh to try again."); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [wishlistIds]);
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-1">Your wishlist</h1>
-      <p className="text-campus-navy/60 mb-8">Items you've saved for later.</p>
-
-      {loading ? (
-        <p className="text-campus-navy/50 text-sm">Loading...</p>
-      ) : products.length === 0 ? (
-        <div className="text-center py-16 text-campus-navy/50">
-          Nothing saved yet.{" "}
-          <Link to="/" className="text-campus-gold font-medium">
-            Browse the marketplace
-          </Link>
-          .
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((p) => (
-            <ProductCard key={p._id} product={p} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Wishlist;
+  return <div className="page-width standard-page">
+    <div className="page-heading"><div><span className="eyebrow">A FEW THINGS YOU LOVE</span><h1>Your wishlist<span className="count-badge">{products.length}</span></h1><p>All your favorite finds, saved in one little space.</p></div><Link to="/" className="button button-secondary">Keep exploring <Icon name="arrow" size={16}/></Link></div>
+    {error && <div className="inline-error" role="alert">{error}</div>}
+    {loading ? <div className="empty-state" role="status">Gathering your favorites…</div> : products.length ? <div className="product-grid">{products.map((product) => <ProductCard key={product._id} product={product}/>)}</div> : !error && <div className="empty-state"><span className="empty-icon"><Icon name="heart" size={31}/></span><h3>Something will catch your eye</h3><p>Tap the heart on any listing to save it here. Your next favorite thing might be just around the corner.</p><Link to="/" className="button button-primary">Discover the marketplace <Icon name="arrow" size={17}/></Link></div>}
+  </div>;
+}

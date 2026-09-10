@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createReport } from "../services/reportService.js";
 
 const REASONS = [
@@ -11,6 +11,12 @@ const REASONS = [
 ];
 
 const ReportModal = ({ productId, onClose }) => {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
   const [reason, setReason] = useState(REASONS[0]);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,24 +38,24 @@ const ReportModal = ({ productId, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-campus-navy/40 px-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+    <dialog ref={dialogRef} className="report-dialog" aria-labelledby="report-title" onCancel={onClose}>
+      <div className="form-card">
         {submitted ? (
           <>
-            <h2 className="font-display text-lg font-semibold">Report submitted</h2>
+            <h2 id="report-title" className="font-display text-lg font-semibold">Report submitted</h2>
             <p className="text-sm text-campus-navy/60 mt-2">
               Thanks — our team will review this listing shortly.
             </p>
             <button
               onClick={onClose}
-              className="mt-5 w-full rounded-full bg-campus-navy text-campus-cream py-2 text-sm font-medium"
+              className="button button-primary mt-5 w-full"
             >
               Close
             </button>
           </>
         ) : (
           <>
-            <h2 className="font-display text-lg font-semibold">Report this listing</h2>
+            <h2 id="report-title" className="font-display text-lg font-semibold">Report this listing</h2>
             <p className="text-sm text-campus-navy/60 mt-1 mb-4">
               Let us know what's wrong — reports are reviewed by admins, not the seller.
             </p>
@@ -62,8 +68,9 @@ const ReportModal = ({ productId, onClose }) => {
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="text-sm font-medium">Reason</label>
+                <label htmlFor="report-reason" className="text-sm font-medium">Reason</label>
                 <select
+                  id="report-reason"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2 text-sm"
@@ -76,8 +83,9 @@ const ReportModal = ({ productId, onClose }) => {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Details (optional)</label>
+                <label htmlFor="report-description" className="text-sm font-medium">Details (optional)</label>
                 <textarea
+                  id="report-description"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -88,14 +96,14 @@ const ReportModal = ({ productId, onClose }) => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-full border border-campus-navy/20 py-2 text-sm font-medium"
+                  className="button button-secondary flex-1"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-full bg-campus-navy text-campus-cream py-2 text-sm font-medium disabled:opacity-50"
+                  className="button button-primary flex-1"
                 >
                   {submitting ? "Sending..." : "Submit report"}
                 </button>
@@ -104,7 +112,7 @@ const ReportModal = ({ productId, onClose }) => {
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 };
 

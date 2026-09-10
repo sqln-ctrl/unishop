@@ -1,7 +1,8 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar.jsx";
+import Footer from "./components/Footer.jsx";
 import ProtectedRoute, {
   SellerRoute,
 } from "./components/ProtectedRoute.jsx";
@@ -17,6 +18,8 @@ import Wishlist from "./pages/Wishlist.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 function App() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [pathname]);
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -80,6 +83,7 @@ function App() {
           />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }

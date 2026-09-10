@@ -1,37 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import WishlistButton from "./WishlistButton.jsx";
+import Icon, { categoryIcons } from "./Icon.jsx";
 
-const ProductCard = ({ product }) => {
+export default function ProductCard({ product }) {
+  const [imageFailed, setImageFailed] = useState(false);
   return (
-    <Link
-      to={`/products/${product._id}`}
-      className="group block rounded-2xl overflow-hidden border border-campus-navy/10 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all"
-    >
-      <div className="relative aspect-square bg-campus-navy/5 overflow-hidden">
-        {product.images?.[0] ? (
-          <img
-            src={product.images[0]}
-            alt={product.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-campus-navy/30 text-sm">
-            No image
-          </div>
-        )}
-        <WishlistButton productId={product._id} className="absolute top-2 right-2 w-8 h-8 shadow" />
+    <article className="product-card">
+      <div className="product-image">
+        <Link to={`/products/${product._id}`} aria-label={`View ${product.title}`}>
+          {product.images?.[0] && !imageFailed ? <img src={product.images[0]} alt={product.title} loading="lazy" onError={() => setImageFailed(true)} /> : <div className="product-placeholder"><Icon name={categoryIcons[product.category] || "box"} size={58}/><span>No photo yet</span></div>}
+        </Link>
+        <span className={`condition-badge ${product.status === "sold" ? "is-sold" : ""}`}>{product.status === "sold" ? "Sold" : product.condition}</span>
+        <WishlistButton productId={product._id} className="product-heart"/>
       </div>
-      <div className="p-3">
-        <p className="text-xs uppercase tracking-wide text-campus-navy/50">{product.category}</p>
-        <h3 className="font-display font-semibold text-campus-navy truncate">{product.title}</h3>
-        <div className="flex items-center justify-between mt-1">
-          <span className="font-semibold text-campus-gold">${product.price}</span>
-          <span className="text-xs text-campus-navy/50">{product.condition}</span>
-        </div>
-      </div>
-    </Link>
+      <Link to={`/products/${product._id}`} className="product-content">
+        <p className="product-category">{product.category}</p>
+        <h3>{product.title}</h3>
+        <p className="product-price">{product.price === 0 ? "Free" : `$${Number(product.price).toLocaleString()}`}</p>
+        <div className="product-meta"><span><Icon name="pin" size={13}/>{product.location || product.seller?.university || "Campus listing"}</span><Icon name="arrow" size={16}/></div>
+      </Link>
+    </article>
   );
-};
-
-export default ProductCard;
+}

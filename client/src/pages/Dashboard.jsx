@@ -3,136 +3,37 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getUserListings } from "../services/productService.js";
 import ProductCard from "../components/ProductCard.jsx";
+import Icon from "../components/Icon.jsx";
 
-const Dashboard = () => {
+export default function Dashboard() {
   const { user, switchAccountType } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
-
-  const isSeller = user?.accountType === "seller";
-
+  const [error, setError] = useState("");
+  const isSeller = user?.accountType === "seller" || user?.isAdmin;
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getUserListings(user._id);
-        setListings(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user && isSeller) fetch();
-    else setLoading(false);
+    let active = true;
+    if (!isSeller) { setLoading(false); return; }
+    setLoading(true);
+    getUserListings(user._id).then((data) => { if (active) { setListings(data); setError(""); } }).catch(() => { if (active) setError("Couldn't load your listings. Please refresh to try again."); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [user, isSeller]);
-
-  const active = listings.filter((l) => l.status === "available");
-  const sold = listings.filter((l) => l.status === "sold");
-
-  const handleSwitch = async () => {
+  const activeListings = listings.filter((item) => item.status === "available");
+  const sold = listings.filter((item) => item.status === "sold");
+  const becomeSeller = async () => {
     setSwitching(true);
-    try {
-      await switchAccountType("seller");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSwitching(false);
-    }
+    try { await switchAccountType("seller"); setError(""); }
+    catch (err) { setError(err.response?.data?.message || "Couldn't switch your account. Please try again."); }
+    finally { setSwitching(false); }
   };
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">
-            Hi, {user?.name?.split(" ")[0]}
-          </h1>
-
-          <p className="text-campus-navy/60 mt-1">
-            {user?.university} ·{" "}
-            <span className="capitalize">
-              {user?.accountType} account
-            </span>
-          </p>
-        </div>
-
-        {isSeller && (
-          <Link
-            to="/create"
-            className="rounded-full bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium"
-          >
-            + New listing
-          </Link>
-        )}
-      </div>
-
-      {!isSeller ? (
-        <div className="rounded-2xl border border-campus-navy/10 bg-white p-8 text-center">
-          <h2 className="font-display text-lg font-semibold">
-            You're on a regular account
-          </h2>
-
-          <p className="text-campus-navy/60 text-sm mt-1 max-w-sm mx-auto">
-            Regular accounts can browse and message sellers. Become a seller
-            to start listing your own items.
-          </p>
-
-          <button
-            onClick={handleSwitch}
-            disabled={switching}
-            className="mt-5 rounded-full bg-campus-navy text-campus-cream px-6 py-2.5 text-sm font-medium disabled:opacity-50"
-          >
-            {switching ? "Switching..." : "Become a seller"}
-          </button>
-        </div>
-      ) : (
-        <>
-          <h2 className="text-lg font-semibold mb-3">
-            Active listings ({active.length})
-          </h2>
-
-          {loading ? (
-            <p className="text-campus-navy/50 text-sm mb-8">
-              Loading...
-            </p>
-          ) : active.length === 0 ? (
-            <p className="text-campus-navy/50 text-sm mb-8">
-              You haven't listed anything yet.{" "}
-              <Link
-                to="/create"
-                className="text-campus-gold font-medium"
-              >
-                Create your first listing
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
-              {active.map((p) => (
-                <ProductCard key={p._id} product={p} />
-              ))}
-            </div>
-          )}
-
-          {sold.length > 0 && (
-            <>
-              <h2 className="text-lg font-semibold mb-3">
-                Sold ({sold.length})
-              </h2>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
-                {sold.map((p) => (
-                  <ProductCard key={p._id} product={p} />
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
-export default Dashboard;
+  return <div className="page-width standard-page">
+    <div className="page-heading"><div><span className="eyebrow">YOUR LITTLE CORNER OF CAMPUS</span><h1>Hey, {user?.name?.split(" ")[0]}<span className="text-campus-gold">.</span></h1><p>{user?.university} · <span className="capitalize">{user?.accountType} account</span></p></div>{isSeller && <Link to="/create" className="button button-primary"><Icon name="plus" size={17}/> New listing</Link>}</div>
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    {!isSeller ? <div className="empty-state"><span className="empty-icon"><Icon name="bag" size={32}/></span><h3>Your next chapter starts with a listing</h3><p>Got a textbook you've finished or something you no longer use? Become a seller and help it find a new home.</p><button className="button button-primary" onClick={becomeSeller} disabled={switching}>{switching ? "Switching…" : "Become a seller"}<Icon name="arrow" size={17}/></button></div> : <>
+      <div className="dashboard-stats">{[["bag", "Active listings", activeListings.length], ["check", "Items sold", sold.length], ["eye", "Total listing views", listings.reduce((sum, item) => sum + (item.views || 0), 0)]].map(([icon,label,value]) => <div className="dashboard-stat" key={label}><span className="stat-icon"><Icon name={icon} size={21}/></span><div><strong>{loading ? "—" : value}</strong><small>{label}</small></div></div>)}</div>
+      <section className="dashboard-section"><h2>Your active listings <span className="count-badge">{activeListings.length}</span></h2>{loading ? <div className="empty-state" role="status">Loading your listings…</div> : activeListings.length === 0 ? <div className="empty-state"><span className="empty-icon"><Icon name="box" size={30}/></span><h3>Let's put something out there</h3><p>Your active listings will live here. Take a few photos and get your first item ready for its next owner.</p><Link to="/create" className="button button-primary"><Icon name="plus" size={17}/> Create a listing</Link></div> : <div className="product-grid">{activeListings.map((product) => <ProductCard key={product._id} product={product}/>)}</div>}</section>
+      {sold.length > 0 && <section className="dashboard-section"><h2>Found a new home <span className="count-badge">{sold.length}</span></h2><div className="product-grid">{sold.map((product) => <ProductCard key={product._id} product={product}/>)}</div></section>}
+    </>}
+  </div>;
+}

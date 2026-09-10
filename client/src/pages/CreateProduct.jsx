@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import Icon from "../components/Icon.jsx";
+import { Link, useNavigate } from "react-router-dom";
 import { createProduct } from "../services/productService.js";
 import { uploadImages } from "../services/uploadService.js";
 import { CATEGORIES, CONDITIONS } from "../utils/categories.js";
@@ -74,17 +75,22 @@ const CreateProduct = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-12">
+    <div className="page-width standard-page">
+      <div className="breadcrumb"><Link to="/">Marketplace</Link><Icon name="chevron" size={12}/><span>Create a listing</span></div>
+      <div className="page-heading"><div><span className="eyebrow">PASS IT ON. MAKE SOME ROOM.</span>
       <h1 className="text-2xl font-bold mb-1">List an item</h1>
       <p className="text-campus-navy/60 mb-6 text-sm">
         Give your listing a clear title and honest condition — it sells faster.
       </p>
 
+      </div></div>
+      <div className="listing-layout"><div className="form-card">
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <h2 className="form-section-title"><span className="step-number">01</span> Make a great first impression</h2>
         <div>
           <label className="text-sm font-medium">Photos</label>
 
@@ -96,7 +102,8 @@ const CreateProduct = () => {
                   <button
                     type="button"
                     onClick={() => removeImage(url)}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-campus-navy/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove photo"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-campus-navy/80 text-white text-xs flex items-center justify-center"
                   >
                     ×
                   </button>
@@ -106,25 +113,29 @@ const CreateProduct = () => {
           )}
 
           {images.length < MAX_IMAGES && (
-            <label className="mt-2 flex items-center justify-center h-24 rounded-lg border border-dashed border-campus-navy/30 text-sm text-campus-navy/50 cursor-pointer hover:border-campus-gold hover:text-campus-navy transition-colors">
-              {uploading ? "Uploading..." : "Click to add photos"}
+            <label className="upload-zone mt-2">
+              <Icon name="upload" size={28}/>
+              {uploading ? "Uploading your photos…" : "Choose photos for your listing"}
+              <small>JPEG, PNG, WEBP or GIF · Up to 5MB each</small>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={handleFileSelect}
                 disabled={uploading}
-                className="hidden"
+                className="sr-only"
               />
             </label>
           )}
-          <p className="text-xs text-campus-navy/40 mt-1">Up to {MAX_IMAGES} images, 5MB each.</p>
+          <p className="text-xs text-slate-500 mt-1">Up to {MAX_IMAGES} images, 5MB each.</p>
         </div>
 
+        <h2 className="form-section-title !mt-8"><span className="step-number">02</span> Tell us about your item</h2>
         <div>
-          <label className="text-sm font-medium">Title</label>
+          <label htmlFor="listing-title" className="text-sm font-medium">Title</label>
           <input
-            name="title"
+            id="listing-title" name="title"
+            placeholder="e.g. Calculus textbook, like new"
             required
             value={form.title}
             onChange={handleChange}
@@ -132,9 +143,10 @@ const CreateProduct = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Description</label>
+          <label htmlFor="listing-description" className="text-sm font-medium">Description</label>
           <textarea
-            name="description"
+            id="listing-description" name="description"
+            placeholder="Share the details that will help someone make it theirs…"
             required
             rows={4}
             value={form.description}
@@ -144,10 +156,10 @@ const CreateProduct = () => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium">Price ($)</label>
+            <label htmlFor="listing-price" className="text-sm font-medium">Price ($)</label>
             <input
               type="number"
-              name="price"
+              id="listing-price" name="price"
               min="0"
               required
               value={form.price}
@@ -156,9 +168,9 @@ const CreateProduct = () => {
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Condition</label>
+            <label htmlFor="listing-condition" className="text-sm font-medium">Condition</label>
             <select
-              name="condition"
+              id="listing-condition" name="condition"
               value={form.condition}
               onChange={handleChange}
               className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2"
@@ -172,9 +184,9 @@ const CreateProduct = () => {
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium">Category</label>
+          <label htmlFor="listing-category" className="text-sm font-medium">Category</label>
           <select
-            name="category"
+            id="listing-category" name="category"
             value={form.category}
             onChange={handleChange}
             className="mt-1 w-full rounded-lg border border-campus-navy/20 px-3 py-2"
@@ -187,9 +199,9 @@ const CreateProduct = () => {
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium">Campus / location</label>
+          <label htmlFor="listing-location" className="text-sm font-medium">Campus / location</label>
           <input
-            name="location"
+            id="listing-location" name="location"
             value={form.location}
             onChange={handleChange}
             placeholder="e.g. Hostel Block C"
@@ -197,10 +209,10 @@ const CreateProduct = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">WhatsApp number</label>
+          <label htmlFor="listing-whatsapp" className="text-sm font-medium">WhatsApp number</label>
           <input
             type="tel"
-            name="whatsapp"
+            id="listing-whatsapp" name="whatsapp"
             required
             value={form.whatsapp}
             onChange={handleChange}
@@ -209,17 +221,18 @@ const CreateProduct = () => {
           />
           <p className="text-xs text-campus-navy/40 mt-1">
             Include your country code. Buyers will use this to message you directly on
-            WhatsApp — it isn't shown as text anywhere on the listing.
+            WhatsApp.
           </p>
         </div>
         <button
           type="submit"
           disabled={submitting || uploading}
-          className="w-full rounded-full bg-campus-navy text-campus-cream py-2.5 font-medium hover:bg-campus-navy/90 transition-colors disabled:opacity-50"
+          className="button button-primary w-full !mt-7"
         >
           {submitting ? "Publishing..." : "Publish listing"}
         </button>
       </form>
+      </div><aside className="listing-tips"><Icon name="bag" size={28}/><h2>A little effort. A better listing.</h2><div className="listing-tip"><Icon name="image" size={18}/><div><strong>Let your photos do the talking</strong><p>Use natural light, a clear background, and a few different angles.</p></div></div><div className="listing-tip"><Icon name="pencil" size={18}/><div><strong>Keep it clear and honest</strong><p>Include the brand, condition, and any details you would want to know.</p></div></div><div className="listing-tip"><Icon name="chat" size={18}/><div><strong>Be ready to connect</strong><p>Buyers will reach out to your WhatsApp number to arrange the details.</p></div></div></aside></div>
     </div>
   );
 };

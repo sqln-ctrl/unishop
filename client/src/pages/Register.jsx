@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/AuthLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const Register = () => {
@@ -32,7 +33,8 @@ const Register = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
+    <AuthLayout register>
+      <span className="eyebrow mb-3">WELCOME TO YOUR COMMUNITY</span>
       <h1 className="text-2xl font-bold mb-1">Join UniShop</h1>
       <p className="text-campus-navy/60 mb-6 text-sm">
         Buy, sell, and trade with students at your university.
@@ -52,7 +54,7 @@ const Register = () => {
             ].map((opt) => (
               <label
                 key={opt.value}
-                className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${
+                className={`account-choice cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${
                   form.accountType === opt.value
                     ? "border-campus-gold bg-campus-gold/10"
                     : "border-campus-navy/20"
@@ -71,13 +73,14 @@ const Register = () => {
               </label>
             ))}
           </div>
-          <p className="text-xs text-campus-navy/40 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             You can switch this later from your dashboard.
           </p>
         </div>
         <div>
-          <label className="text-sm font-medium">Full name</label>
+          <label htmlFor="register-name" className="text-sm font-medium">Full name</label>
           <input
+            id="register-name"
             name="name"
             required
             value={form.name}
@@ -86,8 +89,9 @@ const Register = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">University</label>
+          <label htmlFor="register-university" className="text-sm font-medium">University</label>
           <input
+            id="register-university"
             name="university"
             required
             value={form.university}
@@ -97,9 +101,10 @@ const Register = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">University email</label>
+          <label htmlFor="register-email" className="text-sm font-medium">University email</label>
           <input
             type="email"
+            id="register-email"
             name="email"
             required
             value={form.email}
@@ -108,9 +113,10 @@ const Register = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Password</label>
+          <label htmlFor="register-password" className="text-sm font-medium">Password</label>
           <input
             type="password"
+            id="register-password"
             name="password"
             required
             minLength={6}
@@ -122,7 +128,7 @@ const Register = () => {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-full bg-campus-navy text-campus-cream py-2.5 font-medium hover:bg-campus-navy/90 transition-colors disabled:opacity-50"
+          className="button button-primary w-full"
         >
           {submitting ? "Creating account..." : "Create account"}
         </button>
@@ -134,7 +140,7 @@ const Register = () => {
           Log in
         </Link>
       </p>
-    </div>
+    </AuthLayout>
   );
 };
 

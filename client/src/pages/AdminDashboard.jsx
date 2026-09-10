@@ -266,7 +266,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="page-width admin-page">
       <div className="mb-7">
         <p className="text-xs uppercase tracking-wider text-campus-gold font-semibold">
           Administration
