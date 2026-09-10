@@ -1,73 +1,46 @@
-import Report from "../models/Report.js";
-import Product from "../models/Product.js";
+import prisma from "../config/db.js";
+import { serializeReport } from "../utils/serializers.js";
+import { enumField, httpError, reportReasons, reportStatuses, textField } from "../utils/validation.js";
 
-// @desc    Report a listing
-// @route   POST /api/reports
-// @access  Private
+export const reportInclude = {
+  reporter: { select: { id: true, name: true, email: true } },
+  product: { select: { id: true, title: true, status: true, sellerId: true } },
+};
+
 export const createReport = async (req, res, next) => {
   try {
-    const { productId, reason, description } = req.body;
-
-    if (!productId || !reason) {
-      return res.status(400).json({ message: "Product and reason are required" });
+    const productId = textField(req.body.productId, "Product");
+    const reason = enumField(req.body.reason, reportReasons, "report reason");
+    const description = textField(req.body.description, "Description", { optional: true, max: 1000 });
+    if (!(await prisma.product.findUnique({ where: { id: productId }, select: { id: true } }))) {
+      throw httpError(404, "Product not found");
     }
-
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    const report = await Report.create({
-      reporter: req.user._id,
-      product: productId,
-      reason,
-      description,
+    const report = await prisma.report.create({
+      data: { productId, reporterId: req.user.id, reason, description },
     });
-
-    res.status(201).json(report);
+    res.status(201).json(serializeReport(report));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get all reports (admin review queue)
-// @route   GET /api/reports
-// @access  Private/Admin
 export const getReports = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const query = status ? { status } : {};
-
-    const reports = await Report.find(query)
-      .populate("reporter", "name email")
-      .populate("product", "title status seller")
-      .sort({ createdAt: -1 });
-
-    res.json(reports);
+    const where = req.query.status ? { status: enumField(req.query.status, reportStatuses, "report status") } : {};
+    const reports = await prisma.report.findMany({ where, include: reportInclude, orderBy: { createdAt: "desc" } });
+    res.json(reports.map(serializeReport));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Update a report's status
-// @route   PATCH /api/reports/:id
-// @access  Private/Admin
 export const updateReportStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
-    if (!["pending", "reviewed", "dismissed"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-
-    const report = await Report.findById(req.params.id);
-    if (!report) {
-      return res.status(404).json({ message: "Report not found" });
-    }
-
-    report.status = status;
-    await report.save();
-
-    res.json(report);
+    const status = enumField(req.body.status, reportStatuses, "report status");
+    const report = await prisma.report.update({
+      where: { id: req.params.id }, data: { status }, include: reportInclude,
+    });
+    res.json(serializeReport(report));
   } catch (error) {
     next(error);
   }

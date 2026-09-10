@@ -1,59 +1,46 @@
-import User from "../models/User.js";
-import Product from "../models/Product.js";
+import prisma from "../config/db.js";
+import { serializeProduct, sellerSelect } from "../utils/serializers.js";
+import { httpError } from "../utils/validation.js";
 
-// @desc    Get the logged-in user's wishlist
-// @route   GET /api/wishlist
-// @access  Private
+const wishlistIds = async (userId) => {
+  const items = await prisma.wishlistItem.findMany({
+    where: { userId }, select: { productId: true }, orderBy: { createdAt: "asc" },
+  });
+  return items.map((item) => item.productId);
+};
+
 export const getWishlist = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).populate({
-      path: "wishlist",
-      populate: { path: "seller", select: "name university" },
+    const items = await prisma.wishlistItem.findMany({
+      where: { userId: req.user.id },
+      include: { product: { include: { seller: { select: sellerSelect } } } },
+      orderBy: { createdAt: "asc" },
     });
-    res.json(user.wishlist);
+    res.json(items.map((item) => serializeProduct(item.product)));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Add a product to the wishlist
-// @route   POST /api/wishlist/:productId
-// @access  Private
 export const addToWishlist = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    const user = await User.findById(req.user._id);
-
-    if (user.wishlist.some((id) => id.toString() === req.params.productId)) {
-      return res.status(400).json({ message: "Already in wishlist" });
-    }
-
-    user.wishlist.push(product._id);
-    await user.save();
-
-    res.status(201).json({ message: "Added to wishlist", wishlist: user.wishlist });
+    const product = await prisma.product.findUnique({ where: { id: req.params.productId }, select: { id: true } });
+    if (!product) throw httpError(404, "Product not found");
+    await prisma.wishlistItem.create({
+      data: { userId: req.user.id, productId: product.id },
+    });
+    res.status(201).json({ message: "Added to wishlist", wishlist: await wishlistIds(req.user.id) });
   } catch (error) {
-    next(error);
+    next(error.code === "P2002" ? httpError(400, "Already in wishlist") : error);
   }
 };
 
-// @desc    Remove a product from the wishlist
-// @route   DELETE /api/wishlist/:productId
-// @access  Private
 export const removeFromWishlist = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
-
-    user.wishlist = user.wishlist.filter(
-      (id) => id.toString() !== req.params.productId
-    );
-    await user.save();
-
-    res.json({ message: "Removed from wishlist", wishlist: user.wishlist });
+    await prisma.wishlistItem.deleteMany({
+      where: { userId: req.user.id, productId: req.params.productId },
+    });
+    res.json({ message: "Removed from wishlist", wishlist: await wishlistIds(req.user.id) });
   } catch (error) {
     next(error);
   }

@@ -1,58 +1,38 @@
 export const notFound = (req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
+  next(Object.assign(new Error(`Not Found - ${req.originalUrl}`), { status: 404 }));
 };
 
 export const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let statusCode = err.status || (res.statusCode >= 400 ? res.statusCode : 500);
   let message = err.message;
 
   if (err.name === "MulterError") {
     statusCode = 400;
-    if (err.code === "LIMIT_FILE_COUNT") {
+    if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE") {
       message = "You can upload a maximum of 5 images";
     } else if (err.code === "LIMIT_FILE_SIZE") {
       message = "Each image must be 5MB or smaller";
-    } else {
-      message = err.message;
     }
   }
+  if (err.message === "Only JPEG, PNG, WEBP, or GIF images are allowed") statusCode = 400;
 
-  if (err.message === "Only image files are allowed") {
-    statusCode = 400;
-    message = err.message;
-  }
-
-  if (
-    err.name === "MongooseError" &&
-    typeof err.message === "string" &&
-    err.message.includes("buffering timed out")
-  ) {
-    statusCode = 503;
-    message = "Database is still connecting. Please try again.";
-  }
-
-  if (err.name === "MongoServerSelectionError") {
-    statusCode = 503;
-    message = "Database unavailable. Please try again.";
-  }
-
-  if (err.name === "CastError" && err.kind === "ObjectId") {
-    statusCode = 404;
-    message = "Resource not found";
-  }
-
-  if (err.code === 11000) {
+  if (err.code === "P2002") {
     statusCode = 400;
     message = "Duplicate field value entered";
-  }
-
-  if (err.name === "ValidationError") {
+  } else if (err.code === "P2025") {
+    statusCode = 404;
+    message = "Resource not found";
+  } else if (err.code === "P2003") {
     statusCode = 400;
-    message = Object.values(err.errors)
-      .map((val) => val.message)
-      .join(", ");
+    message = "The related user or product no longer exists";
+  } else if (err.name === "PrismaClientValidationError") {
+    statusCode = 400;
+    message = "Invalid request data";
+  } else if (err.name === "PrismaClientInitializationError" || ["P1008", "P2024", "P2034"].includes(err.code)) {
+    statusCode = 503;
+    message = "Database unavailable. Please try again.";
+  } else if (err.name?.startsWith("Prisma")) {
+    message = "Database operation failed";
   }
 
   res.status(statusCode).json({

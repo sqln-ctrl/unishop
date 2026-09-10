@@ -1,119 +1,64 @@
-import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import prisma from "../config/db.js";
 import generateToken from "../utils/generateToken.js";
+import { serializeUser, userSelect } from "../utils/serializers.js";
+import { emailField, enumField, httpError, passwordField, textField } from "../utils/validation.js";
 
-// @desc    Register a new student
-// @route   POST /api/auth/register
-// @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, university, accountType } = req.body;
-
-    if (!name || !email || !password || !university) {
-      return res.status(400).json({ message: "Please fill in all fields" });
+    const name = textField(req.body.name, "Name");
+    const email = emailField(req.body.email);
+    const university = textField(req.body.university, "University");
+    const password = passwordField(req.body.password);
+    const accountType = enumField(req.body.accountType ?? "regular", ["regular", "seller"], "account type");
+    if (await prisma.user.findUnique({ where: { email } })) {
+      throw httpError(400, "Email already registered");
     }
-
-    if (accountType && !["regular", "seller"].includes(accountType)) {
-      return res.status(400).json({ message: "Invalid account type" });
-    }
-
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
-      university,
-      accountType: accountType || "regular",
+    const user = await prisma.user.create({
+      data: { name, email, university, accountType, password: await bcrypt.hash(password, 10) },
+      select: userSelect,
     });
-
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      university: user.university,
-      accountType: user.accountType,
-      isAdmin: user.isAdmin,
-      isVerified: user.isVerified,
-      token: generateToken(user._id),
-    });
+    res.status(201).json({ ...serializeUser(user), token: generateToken(user.id) });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Login student
-// @route   POST /api/auth/login
-// @access  Public
 export const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Please provide email and password" });
+    const email = emailField(req.body.email);
+    if (typeof req.body.password !== "string" || !req.body.password) {
+      throw httpError(400, "Please provide email and password");
     }
-
-    const user = await User.findOne({ email }).select("+password");
-
-    if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ message: "Invalid email or password" });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+      throw httpError(401, "Invalid email or password");
     }
-
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      university: user.university,
-      accountType: user.accountType,
-      isAdmin: user.isAdmin,
-      isVerified: user.isVerified,
-      profileImage: user.profileImage,
-      token: generateToken(user._id),
-    });
+    res.json({ ...serializeUser(user), token: generateToken(user.id) });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get current logged-in user
-// @route   GET /api/auth/me
-// @access  Private
 export const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
-    res.json(user);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: req.user.id },
+      select: { ...userSelect, wishlist: { select: { productId: true } } },
+    });
+    res.json(serializeUser(user));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Switch between a regular and a seller account
-// @route   PATCH /api/auth/account-type
-// @access  Private
 export const updateAccountType = async (req, res, next) => {
   try {
-    const { accountType } = req.body;
-
-    if (!["regular", "seller"].includes(accountType)) {
-      return res.status(400).json({ message: "Invalid account type" });
-    }
-
-    const user = await User.findById(req.user._id);
-    user.accountType = accountType;
-    await user.save();
-
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      university: user.university,
-      accountType: user.accountType,
-      isAdmin: user.isAdmin,
-      isVerified: user.isVerified,
-      profileImage: user.profileImage,
+    const accountType = enumField(req.body.accountType, ["regular", "seller"], "account type");
+    const user = await prisma.user.update({
+      where: { id: req.user.id }, data: { accountType }, select: userSelect,
     });
+    res.json(serializeUser(user));
   } catch (error) {
     next(error);
   }

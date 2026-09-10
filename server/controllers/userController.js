@@ -1,58 +1,43 @@
-import User from "../models/User.js";
-import Product from "../models/Product.js";
+import prisma from "../config/db.js";
+import { serializeUser, serializeProduct, userSelect } from "../utils/serializers.js";
+import { httpError, textField } from "../utils/validation.js";
 
-// @desc    Get public user profile
-// @route   GET /api/users/:id
-// @access  Public
 export const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select(
-      "name university profileImage createdAt"
-    );
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: req.params.id },
+      select: { id: true, name: true, university: true, profileImage: true, createdAt: true },
+    });
+    res.json(serializeUser(user));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Update own profile
-// @route   PUT /api/users/:id
-// @access  Private
 export const updateUserProfile = async (req, res, next) => {
   try {
-    if (req.params.id !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
+    if (req.params.id !== req.user.id) throw httpError(403, "Not authorized");
+    const data = {};
+    for (const field of ["name", "university", "profileImage"]) {
+      if (req.body[field] !== undefined) {
+        data[field] = textField(req.body[field], field, { optional: field === "profileImage" });
+      }
     }
-
-    const user = await User.findById(req.params.id);
-    const fields = ["name", "university", "profileImage"];
-    fields.forEach((field) => {
-      if (req.body[field] !== undefined) user[field] = req.body[field];
+    const user = await prisma.user.update({
+      where: { id: req.user.id }, data, select: userSelect,
     });
-
-    const updated = await user.save();
-    res.json({
-      _id: updated._id,
-      name: updated.name,
-      email: updated.email,
-      university: updated.university,
-      profileImage: updated.profileImage,
-    });
+    res.json(serializeUser(user));
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get a user's active listings
-// @route   GET /api/users/:id/listings
-// @access  Public
 export const getUserListings = async (req, res, next) => {
   try {
-    const listings = await Product.find({ seller: req.params.id }).sort({ createdAt: -1 });
-    res.json(listings);
+    const products = await prisma.product.findMany({
+      where: { sellerId: req.params.id }, orderBy: { createdAt: "desc" },
+    });
+    res.json(products.map(serializeProduct));
   } catch (error) {
     next(error);
   }

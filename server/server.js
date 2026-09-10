@@ -1,58 +1,29 @@
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
-import dotenv from "dotenv";
-import connectDB from "./config/db.js";
+import app from "./app.js";
+import prisma from "./config/db.js";
 
-import authRoutes from "./routes/authRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import uploadRoutes from "./routes/uploadRoutes.js";
-import wishlistRoutes from "./routes/wishlistRoutes.js";
-import reportRoutes from "./routes/reportRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is required. Copy .env.example to .env and set a secret.");
+}
 
-import {
-  notFound,
-  errorHandler,
-} from "./middleware/errorHandler.js";
-
-dotenv.config();
-
-connectDB();
-
-const app = express();
-
-app.use(
-  cors({
-    origin:
-      process.env.CLIENT_URL ||
-      "http://localhost:5173",
-  })
-);
-
-app.use(express.json());
-app.use(morgan("dev"));
-
-app.get("/", (req, res) => {
-  res.json({
-    message: "UniShop API is running",
-  });
-});
-
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/uploads", uploadRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/admin", adminRoutes);
-
-app.use(notFound);
-app.use(errorHandler);
+// Verify both the connection and schema before accepting requests.
+try {
+  await prisma.$connect();
+  await prisma.user.count();
+} catch (error) {
+  console.error("SQLite startup failed. Check DATABASE_URL and run npm run db:deploy.", error.message);
+  await prisma.$disconnect();
+  process.exit(1);
+}
 
 const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT} with SQLite`));
 
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+const shutdown = () => {
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+};
+
+process.once("SIGINT", shutdown);
+process.once("SIGTERM", shutdown);

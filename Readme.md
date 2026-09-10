@@ -1,6 +1,6 @@
 # 🎓 UniShop
 
-**UniShop** is a university-focused online marketplace built with the **MERN stack**, designed to help students buy, sell, exchange, and discover products and services within their university community.
+**UniShop** is a university-focused online marketplace built with **React, Express, Node.js, and SQLite using Prisma ORM**, designed to help students buy, sell, exchange, and discover products and services within their university community.
 
 From used textbooks and calculators to electronics, clothing, hostel items, and student services, UniShop provides a secure platform for campus-to-campus transactions.
 
@@ -82,8 +82,8 @@ From used textbooks and calculators to electronics, clothing, hostel items, and 
 
 * Node.js
 * Express.js
-* MongoDB
-* Mongoose
+* SQLite (local database file)
+* Prisma ORM 7
 * JWT
 * bcrypt
 
@@ -119,7 +119,7 @@ UniShop/
 ├── server/
 │   ├── config/
 │   ├── controllers/
-│   ├── models/
+│   ├── prisma/         # Schema and versioned SQLite migrations
 │   ├── routes/
 │   ├── middleware/
 │   ├── utils/
@@ -135,7 +135,13 @@ UniShop/
 
 ## 📦 Core Models
 
-UniShop uses MongoDB with Mongoose for data management.
+UniShop uses SQLite through Prisma ORM. The schema is in `server/prisma/schema.prisma`.
+
+`User`, `Product`, and `Report` are relational tables. `WishlistItem` links users to products with a unique composite key. Product images are stored as a JSON array of Cloudinary URLs. Foreign keys cascade deletions so removing a listing or user also removes related reports and wishlist entries.
+
+The API continues returning `_id` strings and populated seller/reporter data for the existing React client. Passwords are hashed with bcrypt before Prisma writes them, and request validation replaces the former model validation. Search matches substrings in product titles and descriptions; it does not use a MongoDB text index.
+
+This version starts with a fresh SQLite database. Existing MongoDB records are not imported automatically. Keep any existing MongoDB database or exports until a separate data import is completed.
 
 ### User
 
@@ -300,6 +306,8 @@ cd unishop
 
 ### 2. Install Dependencies
 
+Use Node.js 22.12+ (Node.js 24 LTS is recommended). Run the commands below from the application directory containing `client/` and `server/`. In this workspace, that is the nested `unishop/` directory. On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
+
 Install frontend dependencies:
 
 ```bash
@@ -318,12 +326,12 @@ npm install
 
 ## 🔑 Environment Variables
 
-Create a `.env` file inside the `server` directory.
+Copy `server/.env.example` to `server/.env` and replace `JWT_SECRET` with a long random secret. Prisma Client is generated automatically during the backend dependency installation.
 
 ```env
 PORT=5000
 
-MONGO_URI=your_mongodb_connection_string
+DATABASE_URL="file:./prisma/dev.db"
 
 JWT_SECRET=your_jwt_secret
 
@@ -333,11 +341,34 @@ CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-EMAIL_USER=your_email
-EMAIL_PASSWORD=your_email_password
+JWT_EXPIRES_IN=30d
 ```
 
 > Never commit your `.env` file or expose secret keys in the repository.
+
+`DATABASE_URL` is a local SQLite file URL, resolved relative to `server/` by both the application and Prisma CLI. The default is `server/prisma/dev.db`. No database server, Supabase account, or hosted database credentials are needed. Cloudinary credentials are still required for image uploads.
+
+Initialize the database from `server/`:
+
+```bash
+npm run db:deploy
+```
+
+This creates the local database if needed and applies the committed migrations without resetting existing data. The database and its journal files are ignored by Git; commit schema and migration files instead.
+
+Useful database commands (run inside `server/`):
+
+| Command | Purpose |
+| --- | --- |
+| `npm run db:generate` | Regenerate Prisma Client after schema changes |
+| `npm run db:migrate -- --name describe_change` | Create and apply a development migration |
+| `npm run db:deploy` | Apply committed migrations to a new or existing database |
+| `npm run db:studio` | Inspect and edit local data with Prisma Studio |
+| `npm test` | Run API integration tests against a separate temporary SQLite database |
+
+To bootstrap the first admin in a new database, register an account, open Prisma Studio, and set that user's `isAdmin` field to `true`. Log out and log in again to refresh the frontend session. Further admins can be created from the admin dashboard.
+
+The SQLite setup follows the [Prisma SQLite documentation](https://www.prisma.io/docs/v7/prisma-orm/quickstart/sqlite). The existing JavaScript backend uses the `prisma-client-js` generator with the SQLite driver adapter.
 
 ---
 
@@ -448,7 +479,7 @@ The primary goals of UniShop are to:
 * Encourage student-to-student commerce
 * Provide a safer alternative to public marketplaces
 * Practice real-world full-stack development
-* Build a scalable MERN application
+* Build a maintainable full-stack application
 
 ---
 
@@ -505,7 +536,7 @@ git push origin feature/your-feature
 
 **Saqlain Naqvi**
 
-Built with ❤️ using the MERN stack.
+Built with ❤️ using React, Express, SQLite, Prisma, and Node.js.
 
 ---
 
