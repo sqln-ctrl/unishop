@@ -13,6 +13,3 @@ export const createReport = async ({
 
   return res.data;
 };
-
-console.log("🔥 REPORT SERVICE LOADED");
-console.log("🔥 createReport:", createReport);

@@ -1,19 +1,17 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (loading) return null;
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+    else if (!loading && !user.isAdmin) router.replace("/dashboard");
+  }, [loading, router, user]);
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!user.isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (loading || !user || !user.isAdmin) return null;
 
   return children;
 };

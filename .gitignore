@@ -1,0 +1,21 @@
+# Local deployment secrets and persistent data
+.env
+.env.*
+!.env.example
+client/.env
+client/server/.env
+
+# Build and dependency output
+client/dist/
+client/.next/
+client/node_modules/
+client/server/node_modules/
+client/server/prisma/*.db
+client/server/prisma/*.db-*
+client/server/uploads/*
+!client/server/uploads/.gitkeep
+.vercel/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db

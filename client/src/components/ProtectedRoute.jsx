@@ -1,34 +1,29 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (loading) return null;
+  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, router, user]);
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (loading || !user) return null;
 
   return children;
 };
 
 export const SellerRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const router = useRouter();
+  const allowed = user && (user.accountType === "seller" || user.isAdmin);
 
-  if (loading) return null;
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+    else if (!loading && !allowed) router.replace("/dashboard");
+  }, [allowed, loading, router, user]);
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (
-    user.accountType !== "seller" &&
-    !user.isAdmin
-  ) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (loading || !allowed) return null;
 
   return children;
 };
