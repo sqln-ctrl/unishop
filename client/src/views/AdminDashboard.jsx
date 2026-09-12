@@ -10,7 +10,8 @@ import {
   getAdminReports,
   updateAdminReport,
   createAdmin,
-  changeAdminPassword,
+  updateAdminCredentials,
+  updateUserRole,
 } from "../services/adminService.js";
 
 const tabs = [
@@ -34,7 +35,9 @@ const StatCard = ({ label, value }) => (
 );
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateSession } = useAuth();
+  const [savingCredentials, setSavingCredentials] = useState(false);
+  const [savingRole, setSavingRole] = useState(null);
 
   const [activeTab, setActiveTab] =
     useState("Overview");
@@ -60,8 +63,10 @@ const AdminDashboard = () => {
 
   const [passwordForm, setPasswordForm] =
     useState({
+      email: user?.email || "",
       currentPassword: "",
       newPassword: "",
+      confirmPassword: "",
     });
 
   const showError = (err) => {
@@ -235,20 +240,42 @@ const AdminDashboard = () => {
 
   const handleChangePassword = async (event) => {
     event.preventDefault();
-
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError("New passwords do not match");
+      setMessage("");
+      return;
+    }
+    setSavingCredentials(true);
     try {
-      await changeAdminPassword(passwordForm);
+      const result = await updateAdminCredentials(passwordForm);
+      updateSession(result.user);
 
       setPasswordForm({
+        email: result.user.email,
         currentPassword: "",
         newPassword: "",
+        confirmPassword: "",
       });
-
-      showMessage(
-        "Password changed successfully"
-      );
+      setUsers((current) => current.map((item) => item._id === result.user._id ? result.user : item));
+      showMessage(result.message);
     } catch (err) {
       showError(err);
+    } finally {
+      setSavingCredentials(false);
+    }
+  };
+
+  const handleRoleChange = async (target, role) => {
+    setSavingRole(target._id);
+    try {
+      const updated = await updateUserRole(target._id, role);
+      setUsers((current) => current.map((item) => item._id === updated._id ? updated : item));
+      await loadStats();
+      showMessage("Role updated. The user must log in again.");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingRole(null);
     }
   };
 
@@ -375,7 +402,7 @@ const AdminDashboard = () => {
               </h2>
 
               <p className="text-sm text-campus-navy/50">
-                Delete users when necessary.
+                Manage account roles and remove users when necessary.
               </p>
             </div>
 
@@ -431,9 +458,17 @@ const AdminDashboard = () => {
                     </td>
 
                     <td className="p-4">
-                      {item.isAdmin
-                        ? "Admin"
-                        : item.accountType}
+                      <select
+                        aria-label={`Role for ${item.name}`}
+                        value={item.role}
+                        disabled={item._id === user?._id || savingRole !== null}
+                        onChange={(event) => handleRoleChange(item, event.target.value)}
+                        className="rounded-lg border border-campus-navy/15 px-2 py-2 disabled:opacity-50"
+                      >
+                        <option value="regular">Regular</option>
+                        <option value="seller">Seller</option>
+                        <option value="admin">Admin</option>
+                      </select>
                     </td>
 
                     <td className="p-4">
@@ -649,18 +684,26 @@ const AdminDashboard = () => {
             className="rounded-2xl border border-campus-navy/10 bg-white p-6"
           >
             <h2 className="font-semibold text-lg">
-              Change password
+              Admin login credentials
             </h2>
 
             <p className="text-sm text-campus-navy/50 mt-1 mb-5">
-              Change the password for your current admin
-              account.
+              Update your login email or password. Enter your current password to confirm.
+              Leave the new password blank to keep it. Other sessions will be signed out.
             </p>
 
             <div className="space-y-4">
+              <label className="block text-sm">
+                Login email
+                <input type="email" required autoComplete="username" value={passwordForm.email}
+                  onChange={(event) => setPasswordForm({ ...passwordForm, email: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-campus-navy/15 px-3 py-2.5" />
+              </label>
               <input
                 type="password"
                 required
+                aria-label="Current password"
+                autoComplete="current-password"
                 placeholder="Current password"
                 value={passwordForm.currentPassword}
                 onChange={(e) =>
@@ -674,9 +717,10 @@ const AdminDashboard = () => {
 
               <input
                 type="password"
-                required
-                minLength={6}
-                placeholder="New password"
+                minLength={12}
+                aria-label="New password"
+                autoComplete="new-password"
+                placeholder="New password (at least 12 characters)"
                 value={passwordForm.newPassword}
                 onChange={(e) =>
                   setPasswordForm({
@@ -687,8 +731,13 @@ const AdminDashboard = () => {
                 className="w-full rounded-lg border border-campus-navy/15 px-3 py-2.5 text-sm outline-none focus:border-campus-gold"
               />
 
-              <button className="rounded-lg bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium">
-                Change password
+              <input type="password" aria-label="Confirm new password" autoComplete="new-password"
+                placeholder="Confirm new password" required={Boolean(passwordForm.newPassword)}
+                value={passwordForm.confirmPassword}
+                onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}
+                className="w-full rounded-lg border border-campus-navy/15 px-3 py-2.5 text-sm" />
+              <button disabled={savingCredentials} className="rounded-lg bg-campus-navy text-campus-cream px-5 py-2.5 text-sm font-medium disabled:opacity-50">
+                {savingCredentials ? "Saving..." : "Save credentials"}
               </button>
             </div>
           </form>
@@ -736,7 +785,7 @@ const AdminDashboard = () => {
 
               <input
                 required
-                minLength={6}
+                minLength={12}
                 type="password"
                 placeholder="Password"
                 value={adminForm.password}

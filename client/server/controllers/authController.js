@@ -18,7 +18,7 @@ export const registerUser = async (req, res, next) => {
       data: { name, email, university, accountType, password: await bcrypt.hash(password, 10) },
       select: userSelect,
     });
-    res.status(201).json({ ...serializeUser(user), token: generateToken(user.id) });
+    res.status(201).json({ ...serializeUser(user), token: generateToken(user.id, user.tokenVersion) });
   } catch (error) {
     next(error);
   }
@@ -34,7 +34,7 @@ export const loginUser = async (req, res, next) => {
     if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
       throw httpError(401, "Invalid email or password");
     }
-    res.json({ ...serializeUser(user), token: generateToken(user.id) });
+    res.json({ ...serializeUser(user), token: generateToken(user.id, user.tokenVersion) });
   } catch (error) {
     next(error);
   }

@@ -56,3 +56,13 @@ export const changeAdminPassword = async (data) => {
   const res = await api.patch("/admin/password", data);
   return res.data;
 };
+
+export const updateAdminCredentials = async (data) => {
+  const res = await api.patch("/admin/account", data);
+  return res.data;
+};
+
+export const updateUserRole = async (id, role) => {
+  const res = await api.patch(`/admin/users/${id}/role`, { role });
+  return res.data;
+};

@@ -39,6 +39,13 @@ export const passwordField = (value) => {
   return value;
 };
 
+export const adminPasswordField = (value) => {
+  if (typeof value !== "string" || value.length < 12 || Buffer.byteLength(value, "utf8") > 72) {
+    throw httpError(400, "Admin passwords must be at least 12 characters and at most 72 UTF-8 bytes");
+  }
+  return value;
+};
+
 const priceField = (value) => {
   if ((typeof value !== "number" && typeof value !== "string") || String(value).trim() === "") {
     throw httpError(400, "Price must be a non-negative number");

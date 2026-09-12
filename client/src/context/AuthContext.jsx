@@ -8,10 +8,37 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("unishop_user");
-    if (stored) setUser(JSON.parse(stored));
-    setLoading(false);
+    let active = true;
+    const clearSession = () => {
+      localStorage.removeItem("unishop_user");
+      setUser(null);
+    };
+    window.addEventListener("unishop:unauthorized", clearSession);
+    const restore = async () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("unishop_user") || "null");
+        if (stored?.token) {
+          const profile = await authService.getMe();
+          if (active) {
+            const verified = { ...profile, token: stored.token };
+            localStorage.setItem("unishop_user", JSON.stringify(verified));
+            setUser(verified);
+          }
+        }
+      } catch {
+        if (active) clearSession();
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    restore();
+    return () => { active = false; window.removeEventListener("unishop:unauthorized", clearSession); };
   }, []);
+
+  const updateSession = (data) => {
+    localStorage.setItem("unishop_user", JSON.stringify(data));
+    setUser(data);
+  };
 
   const login = async (credentials) => {
     const data = await authService.login(credentials);
@@ -42,7 +69,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, switchAccountType }}
+      value={{ user, loading, login, register, logout, switchAccountType, updateSession }}
     >
       {children}
     </AuthContext.Provider>

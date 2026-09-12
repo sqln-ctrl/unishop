@@ -11,6 +11,8 @@ import {
   updateAdminReport,
   createAdmin,
   changeAdminPassword,
+  updateAdminCredentials,
+  updateUserRole,
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -21,6 +23,7 @@ router.get("/stats", getAdminStats);
 
 router.get("/users", getAdminUsers);
 router.delete("/users/:id", deleteAdminUser);
+router.patch("/users/:id/role", updateUserRole);
 
 router.get("/products", getAdminProducts);
 router.delete("/products/:id", deleteAdminProduct);
@@ -31,5 +34,6 @@ router.patch("/reports/:id", updateAdminReport);
 router.post("/admins", createAdmin);
 
 router.patch("/password", changeAdminPassword);
+router.patch("/account", updateAdminCredentials);
 
 export default router;

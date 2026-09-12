@@ -1,3 +1,4 @@
+-- Archived SQLite migration; not applied to Supabase PostgreSQL.
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,

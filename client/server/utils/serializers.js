@@ -1,3 +1,5 @@
+import { getRole } from "./roles.js";
+
 // Preserve the REST contract (_id and populated relations) for the React client.
 export const sellerSelect = {
   id: true, name: true, university: true, profileImage: true,
@@ -6,15 +8,16 @@ export const sellerSelect = {
 export const userSelect = {
   ...sellerSelect,
   email: true, accountType: true, isAdmin: true, isVerified: true,
-  createdAt: true, updatedAt: true,
+  createdAt: true, updatedAt: true, tokenVersion: true,
 };
 
 export const serializeUser = (user) => {
   if (!user) return null;
-  const { id, password, wishlist, ...fields } = user;
+  const { id, password, tokenVersion, wishlist, ...fields } = user;
   return {
     _id: id,
     ...fields,
+    ...(user.accountType !== undefined ? { role: getRole(user) } : {}),
     ...(wishlist ? { wishlist: wishlist.map((item) => item.productId) } : {}),
   };
 };

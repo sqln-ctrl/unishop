@@ -18,8 +18,8 @@ const Login = () => {
     setError("");
     setSubmitting(true);
     try {
-      await login(form);
-      router.push("/");
+      const account = await login(form);
+      router.push(account.role === "admin" ? "/admin" : "/");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
